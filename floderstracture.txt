@@ -1,0 +1,17 @@
+TaskManager_MERN/
+├── .github/
+│   └── workflows/
+│       └── ci-build.yml         
+├── backend/
+│   ├── Dockerfile                   # Dockerfile for backend
+│   ├── src/
+│   ├── package.json
+│   └── ...
+├── client/
+│   ├── Dockerfile                  # Dockerfile for client (Next.js)
+│   ├── next.config.js
+│   ├── package.json
+│   └── ...
+├── .dockerignore
+├── .gitignore
+└── README.md
