@@ -1,15 +1,25 @@
 app-repo/
 ├── backend/
-│   ├── Dockerfile
 │   ├── src/
+│   ├── Dockerfile
 │   ├── package.json
-│   └── ...
+│   ├── package-lock.json
+│   └── .env
+│
 ├── client/
+│   ├── public/
+│   ├── src/
 │   ├── Dockerfile
 │   ├── next.config.js
 │   ├── package.json
-│   └── ...
-├── Jenkinsfile                  # Jenkins pipeline script
+│   ├── package-lock.json
+│   └── .env.local
+│
+├── .github/
+│   └── workflows/
+│       ├── ci.yml             # CI pipeline to build/test frontend and backend , pipeline to push images and update infra repo (optional combined with ci.yml)
+│
 ├── .dockerignore
 ├── .gitignore
-└── README.md
+├── README.md
+└── other configs/docs
