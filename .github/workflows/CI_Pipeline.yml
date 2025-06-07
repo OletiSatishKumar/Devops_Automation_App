@@ -9,14 +9,12 @@ on:
 
 jobs:
   build-and-deploy:
-    name: Build and Push Docker Images, Update Helm Values
     runs-on: ubuntu-latest
 
     env:
       BACKEND_IMAGE: satishosk/taskmanager-backend
       FRONTEND_IMAGE: satishosk/taskmanager-frontend
       INFRA_REPO: https://github.com/OletiSatishKumar/Devops_Automation_Infra.git
-      VALUES_FILE: helm/taskmanager/values.yaml
 
     steps:
       - name: Checkout App Repo
@@ -36,7 +34,9 @@ jobs:
 
       - name: Build & Push Frontend Image
         run: |
-          docker build -t $FRONTEND_IMAGE:${{ steps.vars.outputs.tag }} ./client
+          docker build \
+            --build-arg NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }} \
+            -t $FRONTEND_IMAGE:${{ steps.vars.outputs.tag }} ./client
           docker push $FRONTEND_IMAGE:${{ steps.vars.outputs.tag }}
 
       - name: Clone Infra Repo
@@ -45,15 +45,24 @@ jobs:
           git config --global user.email "github-actions@github.com"
           git clone https://${{ secrets.GH_PAT }}@github.com/OletiSatishKumar/Devops_Automation_Infra.git infra-repo
 
+      - name: Set Helm values file based on branch
+        id: set-values
+        run: |
+          if [[ "${GITHUB_REF##*/}" == "main" ]]; then
+            echo "values_file=helm/taskmanager/values-prod.yaml" >> $GITHUB_OUTPUT
+          else
+            echo "values_file=helm/taskmanager/values-dev.yaml" >> $GITHUB_OUTPUT
+          fi
+
       - name: Update Helm Values
         run: |
           cd infra-repo
-          sed -i "s|^\(\s*image:\s*\).*\$|\1$FRONTEND_IMAGE:${{ steps.vars.outputs.tag }}|" $VALUES_FILE
-          sed -i "/backend:/,/image:/ s|^\(\s*image:\s*\).*\$|\1$BACKEND_IMAGE:${{ steps.vars.outputs.tag }}|" $VALUES_FILE
+          sed -i "s|^\(\s*image:\s*\).*\$|\1$FRONTEND_IMAGE:${{ steps.vars.outputs.tag }}|" ${{ steps.set-values.outputs.values_file }}
+          sed -i "/backend:/,/image:/ s|^\(\s*image:\s*\).*\$|\1$BACKEND_IMAGE:${{ steps.vars.outputs.tag }}|" ${{ steps.set-values.outputs.values_file }}
 
-      - name: Commit and Push Changes to Infra Repo
+      - name: Commit & Push Changes to Infra Repo
         run: |
           cd infra-repo
-          git add $VALUES_FILE
-          git commit -m "Update image tags to ${{ steps.vars.outputs.tag }}"
+          git add ${{ steps.set-values.outputs.values_file }}
+          git commit -m "Update image tags to ${{ steps.vars.outputs.tag }} [CI]"
           git push origin main

@@ -1,31 +1,33 @@
-# Build stage
+# Stage 1: Build
 FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies
+# Build-time API URL (from CI)
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 COPY package*.json ./
+
 RUN npm install
 
-# Copy all files except those in .dockerignore
 COPY . .
 
-# Explicitly copy .env.local (since it's .gitignored and possibly .dockerignored)
-COPY .env.local .env.local
-
-# Build Next.js app
 RUN npm run build
 
-# Production stage
+# Stage 2: Production image
 FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy built files from builder stage
-COPY --from=builder /app .
+ENV NODE_ENV=production
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
-# Expose port
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+
 EXPOSE 3000
 
-# Start the app in production mode
-CMD ["npm", "run", "start"]
+CMD ["npm", "start"]
