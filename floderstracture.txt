@@ -1,17 +1,15 @@
-TaskManager_MERN/
-├── .github/
-│   └── workflows/
-│       └── ci-build.yml         
+app-repo/
 ├── backend/
-│   ├── Dockerfile                   # Dockerfile for backend
+│   ├── Dockerfile
 │   ├── src/
 │   ├── package.json
 │   └── ...
 ├── client/
-│   ├── Dockerfile                  # Dockerfile for client (Next.js)
+│   ├── Dockerfile
 │   ├── next.config.js
 │   ├── package.json
 │   └── ...
+├── Jenkinsfile                  # Jenkins pipeline script
 ├── .dockerignore
 ├── .gitignore
 └── README.md
