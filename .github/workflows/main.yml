@@ -1,0 +1,59 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    name: Build and Push Docker Images, Update Helm Values
+    runs-on: ubuntu-latest
+
+    env:
+      BACKEND_IMAGE: satishosk/taskmanager-backend
+      FRONTEND_IMAGE: satishosk/taskmanager-frontend
+      INFRA_REPO: https://github.com/OletiSatishKumar/Devops_Automation_Infra.git
+      VALUES_FILE: helm/taskmanager/values.yaml
+
+    steps:
+      - name: Checkout App Repo
+        uses: actions/checkout@v3
+
+      - name: Set Image Tag
+        id: vars
+        run: echo "tag=${GITHUB_REF##*/}-$(date +%Y%m%d-%H%M)" >> $GITHUB_OUTPUT
+
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Build & Push Backend Image
+        run: |
+          docker build -t $BACKEND_IMAGE:${{ steps.vars.outputs.tag }} ./backend
+          docker push $BACKEND_IMAGE:${{ steps.vars.outputs.tag }}
+
+      - name: Build & Push Frontend Image
+        run: |
+          docker build -t $FRONTEND_IMAGE:${{ steps.vars.outputs.tag }} ./client
+          docker push $FRONTEND_IMAGE:${{ steps.vars.outputs.tag }}
+
+      - name: Clone Infra Repo
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git clone https://${{ secrets.GH_PAT }}@github.com/OletiSatishKumar/Devops_Automation_Infra.git infra-repo
+
+      - name: Update Helm Values
+        run: |
+          cd infra-repo
+          sed -i "s|^\(\s*image:\s*\).*\$|\1$FRONTEND_IMAGE:${{ steps.vars.outputs.tag }}|" $VALUES_FILE
+          sed -i "/backend:/,/image:/ s|^\(\s*image:\s*\).*\$|\1$BACKEND_IMAGE:${{ steps.vars.outputs.tag }}|" $VALUES_FILE
+
+      - name: Commit and Push Changes to Infra Repo
+        run: |
+          cd infra-repo
+          git add $VALUES_FILE
+          git commit -m "Update image tags to ${{ steps.vars.outputs.tag }}"
+          git push origin main
