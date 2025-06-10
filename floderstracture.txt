@@ -17,8 +17,7 @@ app-repo/
 │
 ├── .github/
 │   └── workflows/
-│       ├── ci.yml             # CI pipeline to build/test frontend and backend , pipeline to push images and update infra repo (optional combined with ci.yml)
-│
+│       ├── ci.yml         
 ├── .dockerignore
 ├── .gitignore
 ├── README.md
